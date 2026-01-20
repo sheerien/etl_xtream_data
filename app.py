@@ -48,9 +48,11 @@ def safe_filename(name: str):
 def fetch_categories(host, u, p, kind):
     action = "get_vod_categories" if kind == "movie" else "get_series_categories"
     try:
-        r = requests.get(f"{host}/player_api.php", params={
-            "username": u, "password": p, "action": action
-        }, timeout=30)
+        r = requests.get(
+            f"{host}/player_api.php",
+            params={"username": u, "password": p, "action": action},
+            timeout=30
+        )
         r.raise_for_status()
         return r.json() or []
     except Exception:
@@ -72,11 +74,16 @@ def fetch_items(host, u, p, category_id, kind):
 @st.cache_data(ttl=600)
 def fetch_series_info(host, u, p, series_id):
     try:
-        r = requests.get(f"{host}/player_api.php", params={
-            "username": u, "password": p,
-            "action": "get_series_info",
-            "series_id": series_id
-        }, timeout=60)
+        r = requests.get(
+            f"{host}/player_api.php",
+            params={
+                "username": u,
+                "password": p,
+                "action": "get_series_info",
+                "series_id": series_id,
+            },
+            timeout=60,
+        )
         r.raise_for_status()
         return r.json() or {}
     except Exception:
@@ -162,14 +169,19 @@ with tab_movies:
     cat_name = st.selectbox("Movie Category", cat_map.keys())
     movies = fetch_items(host, username, password, cat_map[cat_name], "movie")
 
-    normalized = [{
-        "name": m["name"],
-        "url": build_movie_url(
-            host, username, password,
-            m["stream_id"],
-            m.get("container_extension", "mp4")
-        )
-    } for m in movies]
+    normalized = [
+        {
+            "name": m["name"],
+            "url": build_movie_url(
+                host,
+                username,
+                password,
+                m["stream_id"],
+                m.get("container_extension", "mp4"),
+            ),
+        }
+        for m in movies
+    ]
 
     total_movies = len(normalized)
     visible_count = min(st.session_state.movies_page * PAGE_SIZE, total_movies)
@@ -188,7 +200,7 @@ with tab_movies:
         ["M3U", "JSON"],
         index=0,
         horizontal=True,
-        key="movie_preview"
+        key="movie_preview",
     )
 
     col1, col2, col3 = st.columns(3)
@@ -218,6 +230,19 @@ with tab_series:
 
     cat_name = st.selectbox("Series Category", cat_map.keys())
     series_list = fetch_items(host, username, password, cat_map[cat_name], "series")
+
+    # ===== Counters (ADDED ONLY) =====
+    all_series_list = fetch_items(host, username, password, "all", "series")
+    total_series_count = len(all_series_list)
+    category_series_count = len(series_list)
+
+    st.markdown(
+        f"""
+**Total series on server:** {total_series_count}  
+**Series in selected category:** {category_series_count}
+"""
+    )
+
     series_map = {s["name"]: s["series_id"] for s in series_list}
 
     series_name = st.selectbox("Select Series", series_map.keys())
@@ -228,11 +253,13 @@ with tab_series:
 
     for season, eps in raw_eps.items():
         for idx, ep in enumerate(eps, 1):
-            seasons[int(season)].append({
-                "season": int(season),
-                "episode": idx,
-                "url": f"{host}/series/{username}/{password}/{ep['id']}.{ep.get('container_extension','mp4')}"
-            })
+            seasons[int(season)].append(
+                {
+                    "season": int(season),
+                    "episode": idx,
+                    "url": f"{host}/series/{username}/{password}/{ep['id']}.{ep.get('container_extension','mp4')}",
+                }
+            )
 
     st.markdown(
         f"""
@@ -246,7 +273,7 @@ with tab_series:
         ["M3U", "JSON"],
         index=0,
         horizontal=True,
-        key="series_preview"
+        key="series_preview",
     )
 
     for season_num, eps in seasons.items():
